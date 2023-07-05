@@ -57,6 +57,13 @@ def get_best_n_components(data, num_eval=20, **kwargs):
     Returns:
       out (int): The best number of components.
    """
+    # k5_dat = []
+    # for k in range(1, 6):
+    #   terms = []
+    #   for _ in range(num_eval):
+    #     val = get_k_fold_validation(data, k, n_splits=5, shuffle=True).mean()
+    #     terms.append(val)
+    #   k5_dat.append(np.array(terms).mean())
     k5_dat = [np.array([get_k_fold_validation(data, k, n_splits=5, shuffle=True).mean()
                         for _ in range(num_eval)]).mean() for k in range(1, 6)]
     k5_max = k5_dat.index(max(k5_dat)) + 1
