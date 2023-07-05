@@ -1,5 +1,6 @@
 import numpy as np
 from dynamo_rp import parameters as pm
+from dynamo_rp import hull_generation as hg
 
 
 def get_res_counts_for_chain(chain):
