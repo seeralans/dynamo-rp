@@ -126,3 +126,20 @@ def split_hels_into_modules(rp, hels):
     return hels_a_cap, hels_a, hels_b, hels_c, hels_c_cap
 
 
+def load_prot_names(mod, length, folder):
+    """
+    Load the protein names for a given module and length.
+    Folder structure must be:
+    folder
+    ├── modxlength.txt
+    Parameters:
+        mod (str): starting module name
+        length (int): length of the rp
+        folder (str): folder name
+    Returns:
+        a dictionary of protein names for each module in the rp.
+    """
+    file_name = f"{mod}x{length}.txt"
+    lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines() ]
+    module_list = {l[0]: l[1].split("-") for l in lines}
+    return module_list
