@@ -18,6 +18,19 @@ def write_list_of_list_vtx(file_name, a_list):
         lines = [",".join([str(s) for s in item]) for item in a_list]
         fp.write("\n".join(lines))
 
+def read_list_of_list_vtx(file_name):
+    """
+    Read a list of list from a file. Each list is a line in the file.
+    Parameters:
+      file_name: file name
+    Return:
+      a list of list
+    """
+    with open (file_name, "r") as fp:
+        lines = fp.readlines()
+        lines = [[x if i == 0 else float(x) for i, x  in enumerate(l.strip().split(","))] for l in lines]
+    return lines
+
 
 def get_hull_points_from_pdb(module_chain, pdb_fname, chain_label="a"):
     """
