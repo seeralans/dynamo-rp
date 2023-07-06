@@ -48,6 +48,7 @@ def get_rps_from_chain(chain, model_params):
     return bulk
 
 
+# TODO Move this function to rp_utility
 def get_model_params(folder):
     """
     Parses json files to create a dictionary containing the parameters.
