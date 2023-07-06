@@ -1,5 +1,5 @@
 import numpy as np
-from dynamo_rp import rp_utility as ut
+from dynamo_rp import rp_utility as rpt
 
 
 def write_list_of_list_vtx(file_name, a_list):
