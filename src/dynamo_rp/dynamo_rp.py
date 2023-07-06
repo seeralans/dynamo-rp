@@ -2,7 +2,10 @@ import dynamo.dynamo as dym
 import numpy as np
 from dynamo_rp import parameters as pm
 
+# TODO Only functions that deals with dym objects should be here.  
 
+
+#TODO move this function to rp_utility
 def get_bounding_rp_from_chain(chain, model_params):
     """
     Gets the appropriate rp(triplet) for the first and last module in the chain.
@@ -31,6 +34,7 @@ def get_bounding_rp_from_chain(chain, model_params):
     return l_bound, r_bound
 
 
+# TODO Move this function to rp_utility 
 def get_rps_from_chain(chain, model_params):
     """
     Gets the rp(triplet) for each module in the chain. Padding the ends of the chain with
