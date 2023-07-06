@@ -5,6 +5,8 @@ from sklearn.mixture import GaussianMixture
 class NumpyEncoder(json.JSONEncoder):
     """
     A class to encode numpy arrays into json.
+    Taken from KarlB's andwer on
+    https://stackoverflow.com/questions/26646362/numpy-array-is-not-json-serializable
     """
     def default(self, obj):
         if isinstance(obj, np.ndarray):
