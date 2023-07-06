@@ -75,80 +75,83 @@ def get_best_n_components(data, num_eval=20, n_splits=5, **kwargs):
 
 # TODO point to how things are aligned
 def compute_internal_ref_frame(hels, stack=False):
-  """
-  Get the internal reference frame for a set of helices. 
-  Parameters:
-    hels (np.array): The helices to be used.
-  Optional:
-    stack (bool): Whether to stack the vectors into a single array.
-  Returns:
-    out (np.array): The internal reference frame.
-  """
-  k_vecs = hels.mean(axis=(1))[:, 0] - hels.mean(axis=(1))[:, 1]
-  k_vecs /= np.linalg.norm(k_vecs, axis=1)[:, None]
-  jt_vecs = hels[:, 0:2, :].mean(axis=(1, 2)) - hels[:, 2:, :].mean(axis=(1, 2))
-  i_vecs = np.cross(k_vecs, jt_vecs)
-  i_vecs /= np.linalg.norm(i_vecs, axis=1)[:, None]
-  j_vecs = np.cross(k_vecs, i_vecs)
-  if stack:
-    return np.stack((i_vecs, j_vecs, k_vecs), axis=2)
-  return i_vecs, j_vecs, k_vecs
+    """
+    Get the internal reference frame for a set of helices. 
+    Parameters:
+      hels (np.array): The helices to be used.
+    Optional:
+      stack (bool): Whether to stack the vectors into a single array.
+    Returns:
+      out (np.array): The internal reference frame.
+    """
+
+    k_vecs = hels.mean(axis=(1))[:, 0] - hels.mean(axis=(1))[:, 1]
+    k_vecs /= np.linalg.norm(k_vecs, axis=1)[:, None]
+    jt_vecs = hels[:, 0:2, :].mean(axis=(1, 2)) - hels[:, 2:, :].mean(axis=(1, 2))
+    i_vecs = np.cross(k_vecs, jt_vecs)
+    i_vecs /= np.linalg.norm(i_vecs, axis=1)[:, None]
+    j_vecs = np.cross(k_vecs, i_vecs)
+    if stack:
+        return np.stack((i_vecs, j_vecs, k_vecs), axis=2)
+    return i_vecs, j_vecs, k_vecs
 
 
 # TODO clean up
 def align_internal(centre_hels, other_hels,):
-  """
-  Align a set of helices to a reference frame. Centre hels is
-  the reference frame to be standardised. 
-  Parameters:
-    centre_hels (np.array): The helices to be used as the reference frame.
-    other_hels (np.array): The helices to be aligned.
-  """
-  from Bio.SVDSuperimposer import SVDSuperimposer
-  rot_trans = []
-  hels_trans = []
-  centroids = centre_hels.mean(axis=(1, 2))
+    """
+    Align a set of helices to a reference frame. Centre hels is
+    the reference frame to be standardised. 
+    Parameters:
+      centre_hels (np.array): The helices to be used as the reference frame.
+      other_hels (np.array): The helices to be aligned.
+    """
+    from Bio.SVDSuperimposer import SVDSuperimposer
+    centroids = centre_hels.mean(axis=(1, 2))
+    i_vecs, j_vecs, k_vecs = compute_internal_ref_frame(centre_hels)
+    align_points = np.transpose(
+      np.stack((centroids,
+                centroids + i_vecs,
+                centroids + j_vecs,
+                centroids + k_vecs,
+                centroids + i_vecs + k_vecs,
+                centroids + i_vecs + j_vecs,
+                centroids + k_vecs + j_vecs,
+                centroids + i_vecs + j_vecs + k_vecs),
+               axis=2), (0, 2, 1))
 
-  i_vecs, j_vecs, k_vecs = compute_internal_ref_frame(centre_hels)
-  align_points = np.transpose(np.stack((centroids,
-                         centroids + i_vecs,
-                         centroids + j_vecs,
-                         centroids + k_vecs,
-                         centroids + i_vecs + k_vecs,
-                         centroids + i_vecs + j_vecs,
-                         centroids + k_vecs + j_vecs,
-                         centroids + i_vecs + j_vecs + k_vecs), axis=2), (0, 2, 1))
+    # Unit cube
+    reference = np.array([
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [1.0, 0.0, 1.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+    ])
+    all_rot_trans = []
+    sup = SVDSuperimposer()
+    for i, points in enumerate(align_points):
+        sup.set(reference, points)
+        sup.run()
+        all_rot_trans.append(sup.get_rotran())
 
-  reference = np.array([
-      [0.0, 0.0, 0.0],
-      [1.0, 0.0, 0.0],
-      [0.0, 1.0, 0.0],
-      [0.0, 0.0, 1.0],
-      [1.0, 0.0, 1.0],
-      [1.0, 1.0, 0.0],
-      [0.0, 1.0, 1.0],
-      [1.0, 1.0, 1.0],
-  ])
-  all_rot_trans = []
-  sup = SVDSuperimposer()
-  for i, points in enumerate(align_points):
-    sup.set(reference, points)
-    sup.run()
-    all_rot_trans.append(sup.get_rotran())
-
-  other_hels_trans = []
-  centre_hels_trans = None
-  for m, hels in enumerate([centre_hels] + other_hels):
-      hels_trans = [] 
-      for i, rot_trans in enumerate(all_rot_trans):
-        hels_upper = np.dot(hels[i, :, 0], rot_trans[0]) + rot_trans[1]
-        hels_lower = np.dot(hels[i, :, 1], rot_trans[0]) + rot_trans[1]
-        hels_trans.append((hels_upper, hels_lower))
-      hels_trans = np.array(hels_trans)
-      hels_trans = np.transpose(hels_trans, (0, 2, 1, 3))
-      if m == 0:
-          centre_hels_trans = hels_trans
-      else:
-          other_hels_trans.append(hels_trans)
-  return centre_hels_trans, other_hels_trans
+    rot_trans = []
+    hels_trans = []
+    other_hels_trans = []
+    centre_hels_trans = None
+    for m, hels in enumerate([centre_hels] + other_hels):
+        hels_trans = [] 
+        for i, rot_trans in enumerate(all_rot_trans):
+          hels_upper = np.dot(hels[i, :, 0], rot_trans[0]) + rot_trans[1]
+          hels_lower = np.dot(hels[i, :, 1], rot_trans[0]) + rot_trans[1]
+          hels_trans.append((hels_upper, hels_lower))
+        hels_trans = np.array(hels_trans)
+        hels_trans = np.transpose(hels_trans, (0, 2, 1, 3))
+        if m == 0:
+            centre_hels_trans = hels_trans
+        else:
+            other_hels_trans.append(hels_trans)
+    return centre_hels_trans, other_hels_trans
 
