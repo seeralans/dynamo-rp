@@ -47,27 +47,29 @@ def get_k_fold_validation(data, n_components, **kwargs):
         out.append(gm.score(data[test_index]))
     return np.array(out)
 
-def get_best_n_components(data, num_eval=20, **kwargs):
-   """
-    Get the best number of components for the data.
-    Parameters:
-      data (np.array): The data to be used for the validation.
-      num_eval (int): The number of evaluations to be done.
-      **kwargs: The keyword arguments for the KFold object.
-    Returns:
-      out (int): The best number of components.
-   """
-    # k5_dat = []
-    # for k in range(1, 6):
-    #   terms = []
-    #   for _ in range(num_eval):
-    #     val = get_k_fold_validation(data, k, n_splits=5, shuffle=True).mean()
-    #     terms.append(val)
-    #   k5_dat.append(np.array(terms).mean())
-    k5_dat = [np.array([get_k_fold_validation(data, k, n_splits=5, shuffle=True).mean()
-                        for _ in range(num_eval)]).mean() for k in range(1, 6)]
-    k5_max = k5_dat.index(max(k5_dat)) + 1
-    return k5_max
+def get_best_n_components(data, num_eval=20, n_splits=5, **kwargs):
+    """
+      Get the best number of components for the data, using k-fold validation.
+      Parameters:
+        data (np.array): The data to be used for the validation.
+      Optional:
+        num_eval (int): The number of evaluations to be done.
+        n_splits (int): The number of splits to be used for the k-fold validation.
+        **kwargs: The keyword arguments for the KFold object.
+      Returns:
+        out (int): The best number of components.
+    """
+    k_dat = []
+    for k in range(1, n_splits+1):
+        terms = []
+        for _ in range(num_eval):
+            val = get_k_fold_validation(data, k, n_splits=n_splits, shuffle=True).mean()
+            terms.append(val)
+        k_dat.append(np.array(terms).mean())
+    # k5_dat = [np.array([get_k_fold_validation(data, k, n_splits=5, shuffle=True).mean()
+    #                     for _ in range(num_eval)]).mean() for k in range(1, 6)]
+    k_max = k_dat.index(max(k_dat)) + 1
+    return k_max
 
 # TODO point to how things are aligned
 def compute_internal_ref_frame(hels, stack=False):
