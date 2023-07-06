@@ -27,7 +27,6 @@ def get_helical_counts_for_chain(chain):
     return list((np.array([pm.module_num_helices[mod] for mod in chain]).cumsum()))
 
 
-# TODO FIX FLIPPING
 def get_helical_residue_location_for_chain(chain):
     """
     Gets the helical residue location for each module in the chain.
@@ -37,11 +36,10 @@ def get_helical_residue_location_for_chain(chain):
       a list of lists of helical residue locations for each module in the chain.
     """
     res_count = [0] + get_res_counts_for_chain(chain)
-    switch = lambda k, pair: pair if k % 2 == 0 else pair[::-1]
     helices = [
         [
-            [idx + res_count[i] for idx in switch(k, pair)]
-            for k, pair in enumerate(pm.module_helical_start_ends[mod])
+            [idx + res_count[i] for idx in pair]
+            for pair in pm.module_helical_start_ends[mod]
         ]
         for i, mod in enumerate(chain)
     ]
