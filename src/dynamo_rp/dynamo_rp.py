@@ -137,3 +137,23 @@ def get_general_modules_from_chain(chain, model_params):
     print(rps)
     modules = [get_general_module_from_rp(rp, model_params) for rp in rps]
     return modules
+
+def get_gaussian_mixture_from_prob_pos(prob_pos, reduce=False):
+    """
+    Gets a GaussianMixture object from a ProbPos object.
+    Parameters:
+        prob_pos (ProbPos): A ProbPos object.
+        reduce (bool): Whether to reduce the ProbPos object to a single Gaussian.
+    Returns:
+        mixture (GaussianMixture): A GaussianMixture object.
+    """
+    if reduce:
+        covs = np.array([prob_pos.cov()])
+        mus = np.array([prob_pos.mu()])
+        weights = np.array([1.0])
+
+    else:
+        mus = prob_pos.mus
+        covs = prob_pos.covs
+        weights = prob_pos.weights
+    return rpt.get_mixture_from_params(mus, covs, weights)
