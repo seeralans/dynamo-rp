@@ -1,1 +1,9 @@
 #+title: dynamo_rp
+
+Introducing Dynamo_RP: A Python Library for Coarse-Grained Modeling of Repeat Proteins
+
+#+begin_src jupyter-python :session dynamo_rp :results drawer :exports none
+import dynamo_rp
+#+end_src
+
+#+RESULTS:
