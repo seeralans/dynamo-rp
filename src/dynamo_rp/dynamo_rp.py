@@ -1,5 +1,6 @@
 import dynamo.dynamo as dym
 import numpy as np
+import dynamo_rp.rp_utility as rpt
 from dynamo_rp import parameters as pm
 
 # TODO Only functions that deals with dym objects should be here.  
