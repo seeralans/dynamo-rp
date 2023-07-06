@@ -70,7 +70,8 @@ def get_model_params(folder):
             model_params[protein_name] = json.loads(f.read())
             f.close()
         except:
-            continue
+            print(f"Error reading {file_name}")
+            return None
     return model_params
 
 
