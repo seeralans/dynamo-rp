@@ -143,6 +143,26 @@ def load_prot_names(mod, length, folder):
     lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines()]
     module_list = {l[0]: l[1].split("-") for l in lines}
     return module_list
+def get_mixture_from_params(mus, covs, weights):
+    """
+    Get a GaussianMixture object from the parameters.
+    Parameters:
+        mus (np.array): means of shape (num_components, num_features)
+        covs (np.array): covariances of shape (num_components, num_features, num_features)
+        weights (np.array): weights of shape (num_components)
+    Returns:
+        a GaussianMixture object
+    """
+    gm = GaussianMixture(n_components=len(mus))
+    gm.means_init = mus
+    gm.fit(np.zeros((max(len(mus), 2), 3)))
+    gm.weights_ = weights
+    gm.means_ = mus
+    gm.covariances_  = covs
+    gm.converged_ = True
+    return gm
+
+
 def spherical_to_cart(r, theta, phi):
     """
     Convert from spherical to Cartesian coordinates.
