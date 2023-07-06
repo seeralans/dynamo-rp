@@ -69,13 +69,13 @@ def get_rp_helices(rp, conf, folder, start_end=(None, None)):
     num_helices = len(point_list) // 2
     out = []
     for i in range(num_helices):
-        u = np.array(point_list[i][  1: ])
+        u = np.array(point_list[i][1:])
         l = np.array(point_list[i + num_helices][1:])
         out.append(np.array([u, l]))
 
     coords = np.array(out)
 
-    return coords[start_end[0]:start_end[1], :, :]
+    return coords[start_end[0] : start_end[1], :, :]
 
 
 def get_rp_helices_all(rp, conf_range, folder, array_out=True, **kwargs):
@@ -117,13 +117,12 @@ def split_hels_into_modules(rp, hels):
         a tuple of helices for each module in the rp.
         (hels_a_cap, hels_a, hels_b, hels_c, hels_c_cap)
     """
-    hel_idxs = np.cumsum([pm.module_num_helices[mod]
-                          for mod in pm.rp_module_list[rp]])
-    hels_a_cap = hels[:, 0:hel_idxs[1]]
-    hels_a = hels[:, hel_idxs[0]:hel_idxs[1]]
-    hels_b = hels[:, hel_idxs[1]:hel_idxs[2]]
-    hels_c = hels[:, hel_idxs[2]:hel_idxs[3]]
-    hels_c_cap = hels[:, hel_idxs[2]:]
+    hel_idxs = np.cumsum([pm.module_num_helices[mod] for mod in pm.rp_module_list[rp]])
+    hels_a_cap = hels[:, 0 : hel_idxs[1]]
+    hels_a = hels[:, hel_idxs[0] : hel_idxs[1]]
+    hels_b = hels[:, hel_idxs[1] : hel_idxs[2]]
+    hels_c = hels[:, hel_idxs[2] : hel_idxs[3]]
+    hels_c_cap = hels[:, hel_idxs[2] :]
     return hels_a_cap, hels_a, hels_b, hels_c, hels_c_cap
 
 
@@ -141,6 +140,6 @@ def load_prot_names(mod, length, folder):
         a dictionary of protein names for each module in the rp.
     """
     file_name = f"{mod}x{length}.txt"
-    lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines() ]
+    lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines()]
     module_list = {l[0]: l[1].split("-") for l in lines}
     return module_list
