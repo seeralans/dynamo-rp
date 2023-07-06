@@ -72,7 +72,8 @@ def get_hull_points_from_pdb(module_chain, pdb_fname, **kwargs):
         rpt.get_helical_residue_location_for_chain(module_chain)
     )
 
-    coords = get_coords_calphas(starts_ends.ravel(), pdb_fname, **kwargs)
+    # The negative one is due to counting from 1 in pdb file
+    coords = get_coords_calphas(starts_ends.ravel()-1, pdb_fname, **kwargs)
     starts = coords[0::2]
     ends = coords[1::2]
     return starts, ends
