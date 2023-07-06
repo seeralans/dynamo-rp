@@ -143,3 +143,35 @@ def load_prot_names(mod, length, folder):
     lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines()]
     module_list = {l[0]: l[1].split("-") for l in lines}
     return module_list
+def spherical_to_cart(r, theta, phi):
+    """
+    Convert from spherical to Cartesian coordinates.
+    Parameters:
+        r (float): radius
+        theta (float): polar angle
+        phi (float): azimuthal angle
+    Returns:
+        a tuple of Cartesian coordinates (x, y, z)
+    """
+    from numpy import cos, sin
+    z = r * cos(theta)
+    x = r * sin(theta) * cos(phi)
+    y = r * sin(theta) * sin(phi)
+    return x, y, z
+
+
+def cart_to_spherical(x, y, z):
+    """
+    Convert from Cartesian to spherical coordinates.
+    Parameters:
+        x (float): x coordinate
+        y (float): y coordinate
+        z (float): z coordinate
+    Returns:
+        a tuple of spherical coordinates (r, theta, phi)
+    """
+    from numpy import cos, sin, arccos, arctan2
+    r = np.sqrt(z**2 + x**2 + y**2)
+    theta = arccos(z / r)
+    phi = arctan2(y, x)
+    return r, theta, phi
