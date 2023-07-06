@@ -145,6 +145,8 @@ def load_prot_names(mod, length, folder):
     lines = [l.strip().split() for l in open(folder + "/" + file_name, "r").readlines()]
     module_list = {l[0]: l[1].split("-") for l in lines}
     return module_list
+
+
 def get_mixture_from_params(mus, covs, weights):
     """
     Get a GaussianMixture object from the parameters.
