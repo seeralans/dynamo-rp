@@ -7,3 +7,278 @@ import dynamo_rp
 #+end_src
 
 #+RESULTS:
+
+* Examples
+** Abstract Dynamo Example
+#+begin_src jupyter-python :session abs :results drawer :exports none
+import numpy as np
+import matplotlib.pyplot as pp
+from dynamo import dynamo as pd
+pp.style.use(['default'])
+
+rot_xy = lambda th: np.array([[np.cos(th), -np.sin(th), 0], [np.sin(th), np.cos(th), 0], [0, 0, 1]])
+prob_pos = lambda mu, f_cov=np.zeros(3, float): pd.ProbPos(
+  np.array([mu]),
+  np.array([np.diag(f_cov)]),
+  np.array([1.0])
+) 
+
+hub = pd.GeneralModule(
+  [
+    prob_pos(np.array([1.0, 0.0, 0.0]),  f_cov=np.array([0.5, 0.5, 0.0])),
+    prob_pos(np.array([0.0, 1.0, 0.0]),  f_cov=np.array([0.5, 0.5, 0.0])),
+    prob_pos(np.array([-1.0, 0.0, 0.0]), f_cov=np.array([0.5, 0.5, 0.0])),
+    prob_pos(np.array([0.0, -1.0, 0.0]), f_cov=np.array([0.5, 0.5, 0.0])),
+  ],
+  [
+    rot_xy(0),
+    rot_xy(np.pi/2),
+    rot_xy(np.pi),
+    rot_xy(3*np.pi/2),
+  ],
+)
+
+mod = lambda dist, th: pd.GeneralModule(
+  [
+    prob_pos(np.array([-dist, 0.0, 0.0]), f_cov=np.array([0.1, 0.1, 0.0])),
+    prob_pos(np.array([dist, 0.0, 0.0]) @ rot_xy(th).T, f_cov=np.array([0.1, 0.1, 0.0]))
+  ],
+  [
+    rot_xy(-th),
+    rot_xy(th),
+  ],
+)
+
+chain = lambda th, k, dist=1: [mod(dist, th) for _ in range(k)]
+mod_edges = lambda so, ms, k: [((0, so), (ms, 0))] + [((ms + mi, 1), (ms+mi+1, 0)) for mi in range(k-1)]
+
+general_mods = [hub]
+edges = []
+chain_length = 5
+curvature = np.pi/9 
+for m in range(4):
+  general_mods += chain(curvature, chain_length, dist=1)
+  edges +=  mod_edges(m, m*chain_length+1, chain_length)
+
+for i in range(4):
+  general_mods[1 + chain_length * i].set_next_ref_frame(np.linalg.inv(general_mods[0].get_next_ref_frame(i)), 0)
+  p_vec = general_mods[1 + chain_length * i].get_p_vector(0)
+  # p_vec.mus = -p_vec.mus
+  #general_mods[1 + chain_length * i].set_p_vector(p_vec, 0)
+
+
+construct = pd.Construct(general_mods, edges)
+construct.propagate(3)
+assembled_mods = construct.get_assembled_modules()
+colours = [(0.0, 0.0, 0.0)]
+colours += [(i/5, 0, 0) for i in range(1, 6)]
+colours += [(0.0, i/5, 0) for i in range(1, 6)]
+colours += [(0.0, 0, i/5) for i in range(1, 6)]
+colours += [(i/5, i/5, 0) for i in range(1, 6)]
+fig, ax = pp.subplots()
+for i, mod in enumerate(assembled_mods):
+  mean = mod.centroid.mean()
+  cov = mod.centroid.cov()[0:2, 0:2]
+  sigma = (cov[0, 0] * cov[1, 1])**(1/2) + 0.1
+  ax.scatter(mean[0], mean[1], s=sigma * 20, color=colours[i])
+ax.set_aspect('equal')
+#+end_src
+
+#+RESULTS:
+[[file:./.ob-jupyter/ee45352996a182a616e057007165218bc95851c9.png]]
+** Hull Generation
+
+#+begin_src jupyter-python :session hull :results drawer :exports none
+import numpy as np
+from dynamo_rp import dynamo_rp as drp
+from dynamo_rp import parameters as pm
+from dynamo_rp import hull_generation as hg
+
+hull_folder = "/home/ss14546/work/protein-crane/data/examples/rp_hull"
+pdb_folder = "/home/ss14546/work/protein-crane/data/rp_relax"
+
+ccs = range(1, 101)
+rps = [f"rp{i}" for i in [1]]
+for rp in rps:
+  print(rp)
+  for cc in ccs:
+    pdb_name = pdb_folder + f"/{rp}_{cc:04}.pdb"
+    upper_vertexes, lower_vertexes = hg.get_hull_points_from_pdb(pm.rp_module_list[rp], pdb_name)
+    upper_vertexes = [[f"u{i+1}"] + [x for x in v] for i, v in enumerate(upper_vertexes)]
+    lower_vertexes = [[f"l{i+1}"] + [x for x in v] for i, v in enumerate(lower_vertexes)]
+    hg.write_list_of_list_vtx(f"{hull_folder}/{rp}/{rp}_{cc:04}.vtx", upper_vertexes + lower_vertexes)
+
+#+end_src
+
+#+RESULTS:
+: rp1
+
+** Model Paramter Generation
+
+#+begin_src jupyter-python :session database :results drawer :exports none
+from dynamo_rp import dynamo_rp as drp
+from dynamo_rp import parameters as pm
+from dynamo_rp import rp_utility as ut
+from dynamo_rp import params_gen as pmg
+import json
+import numpy as np
+import copy
+
+
+
+max_iter = 100
+rp_range =  [1]
+n_working = []
+hull_folder = "/home/ss14546/work/protein-crane/data/examples/rp_hull"
+output_folders = ["/home/ss14546/work/protein-crane/data/examples/model_params_clean"]
+for rpn in rp_range:
+# for rp in [279, 287]:
+  print(f"doing {rpn}")
+  rp = f"rp{rpn}"
+  hels =  ut.get_rp_helices_all(rp, range(1, 101), hull_folder)
+
+
+  hels_a_cap, hels_a, hels_b, hels_c, hels_c_cap = ut.split_hels_into_modules(rp, hels)
+
+  mod_sets = [(hels_a, hels_b, hels_c)]
+
+  for mod_set_i, mod_set in enumerate(mod_sets):
+    mod_a, mod_b, mod_c = mod_set
+    mod_b_cent_aligned, other_modules = pmg.align_internal(mod_b, [mod_c, mod_a])
+    other_mod_ref_frames = [pmg.compute_internal_ref_frame(mod, stack=True)
+                            for mod in other_modules]
+
+
+    p_vecs = [mod.mean(axis=(1, 2)) for mod in other_modules]
+    p_vec_n_components = [pmg.get_best_n_components(p_vec) for p_vec in p_vecs]
+
+
+    hel_components = np.zeros((mod_b_cent_aligned.shape[1], 2), int)
+    for hi in range(hel_components.shape[0]):
+      for u in range(hel_components.shape[1]):
+        comps = pmg.get_best_n_components(mod_b_cent_aligned[:, hi, u, :])
+        hel_components[hi, u] = comps
+
+
+
+    hels_upper_params = [pmg.get_gm_params(mod_b_cent_aligned[:, hi, 0, :],
+                                           hel_components[hi, 0], max_iter=max_iter)
+                         for hi in range(hel_components.shape[0])]
+    hels_lower_params = [pmg.get_gm_params(mod_b_cent_aligned[:, hi, 1, :],
+                                           hel_components[hi, 1], max_iter=max_iter)
+                         for hi in range(hel_components.shape[0])]
+
+    p_vec_params = [pmg.get_gm_params(vec, params, max_iter=max_iter)
+                    for vec, params in zip(p_vecs, p_vec_n_components)]
+    mod_b_params = {
+        "ref_points_params": hels_upper_params + hels_lower_params,
+        "p_vec_params": p_vec_params,
+        "next_ref_frames": [other_mod_ref_frames[0][0], other_mod_ref_frames[0][1]],
+    }
+
+
+    fname = output_folders[mod_set_i] + f"/{rp}.json"
+    print("saving to ", fname)
+    with open(fname, "w") as fp:
+      json.dump(mod_b_params, fp, cls=pmg.NumpyEncoder)
+  print(f"rp {rp} done")
+
+np.savetxt("not_working.txt", n_working)
+#+end_src
+
+** Protein Builds 
+#+begin_src jupyter-python :session build :results drawer :exports none
+from dynamo import dynamo as dym
+import numpy as np
+from dynamo_rp import dynamo_rp as drp
+from dynamo import vis 
+from mayavi import mlab
+
+model_params = drp.get_model_params("/home/ss14546/work/protein-crane/data/model_params_clean")
+hub_params = drp.get_model_params("/home/ss14546/work/protein-crane/data/model_params_hub_static")
+chain = ["D49" for _ in range(9)]
+general_mods = drp.get_general_modules_from_chain(chain, model_params)
+edges = [((i, 0), (i+1, 1)) for i in range(len(chain)-1)]
+
+construct = dym.Construct(general_mods, edges)
+construct.propagate(1)
+
+
+fig3d = mlab.figure(figure='main', size=(100, 100))
+construct.propagate(0)
+assembled_mods = construct.get_assembled_modules()
+vis.visualise_centroids_of_modules(assembled_mods, fig3d, interp_points=100, fin_dims=[0, 1, 2])
+mlab.show()
+#+end_src
+
+#+RESULTS:
+
+*** Star Build
+#+begin_src jupyter-python :session s-build :results drawer :exports none
+from dynamo import dynamo as dym
+import numpy as np
+from dynamo_rp import dynamo_rp as drp
+from dynamo import vis 
+from mayavi import mlab
+import json
+
+model_params = drp.get_model_params("/home/ss14546/work/protein-crane/data/model_params_D4")
+
+hub_params = dict()
+with open("/home/ss14546/work/protein-crane/data/model_params_hub_static/D4_C4_G1.json") as f:
+  model_params["D4_C4_G1"] = json.loads(f.read()) 
+with open("/home/ss14546/work/protein-crane/data/model_params_hub_static/D4_C4_G1_S.json") as f:
+  model_params["D4_C4_G1_S"] = json.loads(f.read()) 
+
+
+hub = drp.get_general_module_from_rp("D4_C4_G1", model_params)
+chain_edges = lambda start, length: [((start+i+1, 0), (start+i, 1)) for i in range(length-1)] 
+
+chain_length = 3
+general_mods = [hub]
+for i in range(4):
+  chain_mods = []
+  for k in range(chain_length):
+    if i == 0:
+      mod_name = "D4_C4_G1_S"
+    else:
+      mod_name = "rp375"
+    chain_mods.append(drp.get_general_module_from_rp(mod_name, model_params))
+  general_mods += chain_mods
+
+edges = []
+for i in range(4):
+  edges.extend([((i*chain_length+1, 0), (0,  i))]
+               + chain_edges(1+chain_length*i, chain_length))
+
+
+fig3d = mlab.figure(figure='main', size=(100, 100))
+construct = dym.Construct(general_mods, edges)
+construct.propagate(0)
+
+assembled_mods = construct.get_assembled_modules()
+for i in range(4):
+ chain_mods = [assembled_mods[0]]
+ chain_mods += assembled_mods[chain_length * i + 1: chain_length*(i+1)+1]
+ vis.visualise_centroids_of_modules(chain_mods, fig3d, interp_points=100)
+mlab.show()
+#+end_src
+
+#+RESULTS:
+
+** PDB Generation
+#+begin_src jupyter-python :session contact :results drawer :exports none
+from dynamo_rp import pdb_generation as pg 
+#+end_src
+
+#+begin_src jupyter-python :session contact :results drawer :exports none
+pdb_folder = "/home/ss14546/work/protein-crane/data/elfin-data/pdb_aligned"
+
+get_chain_l = lambda k, max=6: ["D14" for _ in range(k)] + ["D14_j1_D14" for _ in range(max-k)] 
+get_chain_r = lambda k, max=6: ["D14" for _ in range(k)] + ["D14_j1_D14" for _ in range(max-k)] 
+out_file_l = lambda k, max=6: f"data/d14_analysis/D14x{k}-D14_j1_D14x{max-k}.pdb"
+out_file_r = lambda k, max=6: f"data/d14_analysis/D14_j1_D14x{max-k}-D14x{k}.pdb"
+for i in range(6+1):
+  pg.construct_large_protein(get_chain_l(i), out_file_l(i), pdb_folder)
+  pg.construct_large_protein(get_chain_r(i), out_file_r(i), pdb_folder)
+#+end_src
