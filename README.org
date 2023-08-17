@@ -2,7 +2,7 @@
 
 Introducing Dynamo_RP: A Python Library for Coarse-Grained Modeling of Repeat Proteins
 
-#+begin_src jupyter-python :session dynamo_rp :results drawer :exports none
+#+begin_src python
 import dynamo_rp
 #+end_src
 
@@ -10,7 +10,7 @@ import dynamo_rp
 
 * Examples
 ** Abstract Dynamo Example
-#+begin_src jupyter-python :session abs :results drawer :exports none
+#+begin_src python
 import numpy as np
 import matplotlib.pyplot as pp
 from dynamo import dynamo as pd
@@ -88,7 +88,7 @@ ax.set_aspect('equal')
 [[file:./.ob-jupyter/ee45352996a182a616e057007165218bc95851c9.png]]
 ** Hull Generation
 
-#+begin_src jupyter-python :session hull :results drawer :exports none
+#+begin_src python
 import numpy as np
 from dynamo_rp import dynamo_rp as drp
 from dynamo_rp import parameters as pm
@@ -115,7 +115,7 @@ for rp in rps:
 
 ** Model Paramter Generation
 
-#+begin_src jupyter-python :session database :results drawer :exports none
+#+begin_src python
 from dynamo_rp import dynamo_rp as drp
 from dynamo_rp import parameters as pm
 from dynamo_rp import rp_utility as ut
@@ -187,7 +187,7 @@ np.savetxt("not_working.txt", n_working)
 #+end_src
 
 ** Protein Builds 
-#+begin_src jupyter-python :session build :results drawer :exports none
+#+begin_src python
 from dynamo import dynamo as dym
 import numpy as np
 from dynamo_rp import dynamo_rp as drp
@@ -214,7 +214,7 @@ mlab.show()
 #+RESULTS:
 
 *** Star Build
-#+begin_src jupyter-python :session s-build :results drawer :exports none
+#+begin_src python
 from dynamo import dynamo as dym
 import numpy as np
 from dynamo_rp import dynamo_rp as drp
@@ -267,11 +267,11 @@ mlab.show()
 #+RESULTS:
 
 ** PDB Generation
-#+begin_src jupyter-python :session contact :results drawer :exports none
+#+begin_src python
 from dynamo_rp import pdb_generation as pg 
 #+end_src
 
-#+begin_src jupyter-python :session contact :results drawer :exports none
+#+begin_src python
 pdb_folder = "/home/ss14546/work/protein-crane/data/elfin-data/pdb_aligned"
 
 get_chain_l = lambda k, max=6: ["D14" for _ in range(k)] + ["D14_j1_D14" for _ in range(max-k)] 
