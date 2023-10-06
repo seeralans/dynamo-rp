@@ -86,6 +86,8 @@ ax.set_aspect('equal')
 
 #+RESULTS:
 [[file:./.ob-jupyter/ee45352996a182a616e057007165218bc95851c9.png]]
+** Generate triples
+
 ** Hull Generation
 
 #+begin_src python
@@ -282,3 +284,8 @@ for i in range(6+1):
   pg.construct_large_protein(get_chain_l(i), out_file_l(i), pdb_folder)
   pg.construct_large_protein(get_chain_r(i), out_file_r(i), pdb_folder)
 #+end_src
+
+** Visualisation
+
+** Feature Extraction
+
