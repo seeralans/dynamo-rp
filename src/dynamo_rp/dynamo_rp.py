@@ -46,7 +46,6 @@ def get_rps_from_chain(chain, model_params):
     """
     l_bound, r_bound = get_bounding_rp_from_chain(chain, model_params)
     bulk = [l_bound]
-    print(pm)
     for i in range(1, len(chain) - 1):
         bulk.append(pm.triple_to_rp["-".join(chain[i - 1 : i + 2])])
     bulk.append(r_bound)
@@ -139,9 +138,9 @@ def get_general_modules_from_chain(chain, model_params):
       modules (list): A list of GeneralModule objects.
     """
     rps = get_rps_from_chain(chain, model_params)
-    print(rps)
     modules = [get_general_module_from_rp(rp, model_params) for rp in rps]
     return modules
+
 
 def get_gaussian_mixture_from_prob_pos(prob_pos, reduce=False):
     """

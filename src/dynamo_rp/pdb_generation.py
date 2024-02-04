@@ -22,7 +22,7 @@ SPAN_STRING = Template('<Span begin="$start" end="$end" chi="$chi" bb="$bb"/>')
 CART_RELAX_TEMPLATE = Template(CART_RELAX_STRING)
 
 
-def construct_cart_relax(chain, buff=3, out_file=None):
+def construct_cart_relax(chain, buff=3, out_file=None, cap=False):
     """
     Construct a cartesian relax xml script for a given chain of modules.
     Parameters:
@@ -114,7 +114,7 @@ def mod_to_pdb_double_file(dh1, dh2, elfin_aligned_pdb_folder):
     return elfin_aligned_pdb_folder + r"/doubles/" + f"{dh1}-{dh2}.pdb"
 
 
-def construct_large_protein(chain, out_file, elfin_aligned_pdb_folder):
+def construct_large_protein(chain, out_file, elfin_aligned_pdb_folder, cap=False):
     """
     Construct a large protein from a chain of modules.
     Parameters:
@@ -205,7 +205,70 @@ def construct_large_protein(chain, out_file, elfin_aligned_pdb_folder):
         B.transform(*rot_tran_b_to_ab)
         B.transform(*rot_tran_ab_to_a)
         residue_number = append_residues(B, residue_number)
+
+    if cap:
+        n_cap_name = chain[0].split("_")[0]
+        c_cap_name = chain[-1].split("_")[-1]
+
+        n_cap_file = elfin_aligned_pdb_folder + r"/caps/" + f"{n_cap_name}_NI.pdb"
+        c_cap_file = elfin_aligned_pdb_folder + r"/caps/" + f"{c_cap_name}_IC.pdb"
+
+        NC = read_pdb(n_cap_name, n_cap_file).child_list[0].child_list[0]
+        CC = read_pdb(c_cap_name, c_cap_file).child_list[0].child_list[0]
+
+        n_len = len(NC.child_list) // 2
+        c_len = len(CC.child_list) // 2
+
+        # current position of last two helicies
+        c_c_cas = [a for r in out.child_list[-c_len:] for a in r if a.name == "CA"]
+
+        # current  cas in C cap
+        c_cas = [a for r in CC.child_list[:c_len] for a in r if a.name == "CA"]
+
+        super_imposer = Bio.PDB.Superimposer()
+        super_imposer.set_atoms(c_c_cas, c_cas)
+        rot_tran_c_to_c = super_imposer.rotran
+        CC.transform(*rot_tran_c_to_c)
+        detached_res = CC.child_list[-c_len:]
+        for res in detached_res:
+            CC.detach_child(res.id)
+        for res in detached_res:
+            res.id = (res.id[0], residue_number, res.id[2])
+            out.add(res)
+            residue_number += 1
+
+        n_c_cas = [a for r in out.child_list[:n_len] for a in r if a.name == "CA"]
+
+        n_cas = [a for r in NC.child_list[n_len:] for a in r if a.name == "CA"]
+
+        super_imposer.set_atoms(n_c_cas, n_cas)
+        rot_tran_n_to_n = super_imposer.rotran
+        NC.transform(*rot_tran_n_to_n)
+        detached_res = NC.child_list[:n_len]
+        for res in detached_res:
+            NC.detach_child(res.id)
+        for i, res in enumerate(detached_res):
+            res.id = (res.id[0], residue_number, res.id[2])
+            out.insert(i, res)
+            residue_number += 1
+
+
+
+    detached_res = out.child_list[:-1]
+    for res in detached_res:
+        out.detach_child(res.id)
+
+    oout = Bio.PDB.Chain.Chain("A")
+    res_number = 1
+    for res in detached_res:
+        res.id = (res.id[0], res_number, res.id[2])
+        oout.add(res)
+        res_number += 1
+        
+
+        
+
     io = Bio.PDB.PDBIO()
-    io.set_structure(out)
+    io.set_structure(oout)
     print("Saving to ", out_file)
     io.save(out_file)
