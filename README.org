@@ -2,7 +2,18 @@
 
 Introducing Dynamo_RP: A Python Library for Coarse-Grained Modeling of Repeat Proteins
 
+
+* Installation
+After downloading the repo:
+#+begin_src shell
+cd dynamo_rp
+pip install .
+#+end_src
+The dependencies for the project are listed in ~pyproject.toml~.
+
+* Usage
 #+begin_src python
+import dynamo
 import dynamo_rp
 #+end_src
 
@@ -86,7 +97,6 @@ ax.set_aspect('equal')
 
 #+RESULTS:
 [[file:./.ob-jupyter/ee45352996a182a616e057007165218bc95851c9.png]]
-** Generate triples
 
 ** Hull Generation
 
@@ -285,7 +295,4 @@ for i in range(6+1):
   pg.construct_large_protein(get_chain_r(i), out_file_r(i), pdb_folder)
 #+end_src
 
-** Visualisation
-
-** Feature Extraction
 
